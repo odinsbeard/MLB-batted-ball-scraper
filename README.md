@@ -56,7 +56,7 @@ This function does the bulk of the work.  The argument is a gameday file directo
 -parseDay(url,filename)
 url should be the url containing a day's worth of games; filename should be the name of the output csv file.  This function parses a day's worth of games, and writes a csv files containing all the data output from each call to gameParse.
 
--monthParse(url,filename) Coming Soon.
+-monthParse(month,numdays,filename) Simple script parses a month of data.  Month should be the month written as a two digit numeric string type, i.e. if you want to parse May, it should be '05'; if you want to parse October, it would be '10'.  Needs to be a string.  numdays should just be the number of days in the month.  Filename should be self explanatory.
 
 
 
