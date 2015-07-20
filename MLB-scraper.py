@@ -2,6 +2,7 @@ import urllib2
 import json
 from bs4 import BeautifulSoup
 import pandas as pd
+import time
 
 BASE_URL = "http://www.milb.com/gdcross/components/game/"
 # the directory for AAA is /aaa/, AA is /aax
@@ -15,7 +16,11 @@ def getPitchers(url):
     '''give it the URL of the game directory, 
     i,e. http://www.mlb.com/gdcross/components/game/mlb/year_2015/month_05/day_07/gid_2015_05_07_lanmlb_milmlb_1/
     '''
-    pitcherURL = urllib2.urlopen(url + "pitchers/").read()
+    try:
+        pitcherURL = urllib2.urlopen(url + "pitchers/").read()
+    except:
+        print "Game Postponed"
+        return None
     pitchSoup = BeautifulSoup(pitcherURL,"lxml")
     pitchers = pd.DataFrame(columns=("id","first_name","last_name","height","weight","dob","throws"))
     pitchers = pitchers.set_index('id')
@@ -88,9 +93,10 @@ def gameParse(url):
     # (which I want to assume is unique for all games but won't), and the time of the event.
     # game_id will be the date + game_pk, 
     
-    batters = getBatters(url)
     pitchers = getPitchers(url)
-    
+    if pitchers is None:
+        return None
+    batters = getBatters(url)
     
     gamedata = pd.DataFrame(columns=("play_id","date","game_id","venue","home","inning","away","batter_id","batter",
                                         "stands","batter_team","pitcher_id","pitcher","throws","pitcher_team",
@@ -163,7 +169,10 @@ def gameParse(url):
             time = pitch['tfs']
             play_id = date + "_" + game_pk + "_" + time #15/24 the index
             pitch_type = pitch["type"] #16/24
-            pitch_speed = float(pitch["start_speed"]) #17/24
+            try:
+                pitch_speed = float(pitch["start_speed"]) #17/24
+            except KeyError:
+                pitch_speed = ""
             
             #set these in case they don't get assigned later
             exit_speed = ""
@@ -229,7 +238,10 @@ def gameParse(url):
             time = pitch['tfs']
             play_id = date + "_" + game_pk + "_" + time #15/24 the index
             pitch_type = pitch["type"] #16/24
-            pitch_speed = float(pitch["start_speed"]) #17/24
+            try:
+                pitch_speed = float(pitch["start_speed"]) #17/24
+            except KeyError:
+                pitch_speed = ''
             
             #set these in case they don't get assigned later
             exit_speed = ""
@@ -273,9 +285,11 @@ def gameParse(url):
     return gamedata    
 
 
-def parseDay(url, filename):
+def parseDay(url, filename,writecols=True):
     ''' url should be a day's worth of game data, i.e. http://www.mlb.com/gdcross/components/game/mlb/year_2015/month_05/day_07/
     filename should be the name of the output file.'''
+    
+    print "Day started at", time.ctime()
     
     dayURL = urllib2.urlopen(url).read()
     daySoup = BeautifulSoup(dayURL,"lxml")
@@ -287,10 +301,56 @@ def parseDay(url, filename):
             days.append(i['href'])
     
     #We'll have a dummy boolean initially set to True so that when the first game is written, the header will be written
-    writecols = True
     
     for i in days:
         gamedata = gameParse(url + i)
+        if gamedata is None:
+            continue
         gamedata.to_csv(filename,header=writecols,mode="a")
         writecols = False
+    print "Day ended at", time.ctime() 
+
+def bugHunt(url):
+    ''' opens up the innings_all.xml file and troubleshoots.  url should be the innings_all.xml ''' 
+    inningURL = urllib2.urlopen(url).read()
+    pbpSoup = BeautifulSoup(inningURL,'lxml')
+    innings = pbpSoup.find_all('inning')
+    for j in innings:
+        atbats_away = j.top.find_all('atbat')
+        for i in atbats_away:
+            print "away at bat, number " + str(i['num']),
+            
+            pitch = i.find_all('pitch')[-1]
+            
+            try:
+                print "pitch speed: " + str(float(pitch["start_speed"])) + " mph" #17/24
+            except KeyError:
+                print "pitch speed: __ mph" #17/24
+                
+            
+def parseMonth(month,numdays,filename):
+    ''' month should be a two digit string of numbers for the month desired, i.e. may should be '05',  
+    numdays should be the number of days in the month,filename should be the output file name'''
+    print "Month started at ", time.ctime()
+    
+    cols = True #boolean marker to print the columns before day 1 and not after
+    
+    for i in range(numdays):
+        day_num = i+1
+        if day_num < 10:
+            day = "0" + str(day_num)
+        else:
+            day = str(day_num)
+        url = "http://www.mlb.com/gdcross/components/game/mlb/year_2015/month_" + month + "/day_" + day + "/"
+        parseDay(url,filename,writecols=cols)
+        cols = False
+    
+    print "Month ended at ", time.ctime()
+        
+        
+        
+        
+        
+    
+
     
