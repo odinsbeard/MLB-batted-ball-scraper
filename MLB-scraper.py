@@ -164,8 +164,11 @@ def gameParse(url):
             description = i['des']
             batted_ball_type = getBattedBallType(description) #14/24
             
-            
-            pitch = i.find_all('pitch')[-1]
+            try:
+                pitch = i.find_all('pitch')[-1]
+            except IndexError:
+                continue
+                
             time = pitch['tfs']
             play_id = date + "_" + game_pk + "_" + time #15/24 the index
             pitch_type = pitch["type"] #16/24
@@ -233,8 +236,11 @@ def gameParse(url):
             description = i['des']
             batted_ball_type = getBattedBallType(description) #14/24
             
-            
-            pitch = i.find_all('pitch')[-1]
+            try:
+                pitch = i.find_all('pitch')[-1]
+            except IndexError:
+                continue
+                
             time = pitch['tfs']
             play_id = date + "_" + game_pk + "_" + time #15/24 the index
             pitch_type = pitch["type"] #16/24
@@ -320,7 +326,10 @@ def bugHunt(url):
         for i in atbats_away:
             print "away at bat, number " + str(i['num']),
             
-            pitch = i.find_all('pitch')[-1]
+            try:
+                pitch = i.find_all('pitch')[-1]
+            except IndexError:
+                continue
             
             try:
                 print "pitch speed: " + str(float(pitch["start_speed"])) + " mph" #17/24
@@ -328,15 +337,15 @@ def bugHunt(url):
                 print "pitch speed: __ mph" #17/24
                 
             
-def parseMonth(month,numdays,filename):
+def parseMonth(month,monthstart,monthend,filename,writecols=True):
     ''' month should be a two digit string of numbers for the month desired, i.e. may should be '05',  
-    numdays should be the number of days in the month,filename should be the output file name'''
+    monthstart and month end should be the first day and last day of the month, respectively,filename should be the output file name'''
     print "Month started at ", time.ctime()
     
-    cols = True #boolean marker to print the columns before day 1 and not after
+    cols = writecols #boolean marker to print the columns on monthstart if writecols = True and not after
     
-    for i in range(numdays):
-        day_num = i+1
+    for i in range(monthstart,monthend+1):
+        day_num = i
         if day_num < 10:
             day = "0" + str(day_num)
         else:
