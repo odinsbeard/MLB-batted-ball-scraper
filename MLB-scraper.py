@@ -66,7 +66,7 @@ def getBattedBallType(description):
     flyballs = set(['fly','flies'])
     grounders = set(['grounds', 'ground'])
     popups = set(['pop','pops'])
-    liners = set(['lines','liner'])
+    liners = set(['lines','liner','line'])
     wordlist = set(description.split())
     if len(wordlist.intersection(flyballs)) > 0:
         return 'fb'
