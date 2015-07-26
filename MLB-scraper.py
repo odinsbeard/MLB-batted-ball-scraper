@@ -33,6 +33,29 @@ def getPitchers(url):
                                 player["dob"],player["throws"]]
     return pitchers
 
+def getPlayers(url):
+    '''give it the URL of the game directory, 
+    i,e. http://www.mlb.com/gdcross/components/game/mlb/year_2015/month_05/day_07/gid_2015_05_07_lanmlb_milmlb_1/
+    '''
+    try:
+        playerURL = urllib2.urlopen(url + "players.xml").read()
+    except:
+        print "Game Postponed"
+        return None
+    playSoup = BeautifulSoup(playerURL,"lxml")
+    player_list = playSoup.find_all("player")
+    rows = []
+    for player in player_list:
+        rows.append([player['id'],player['first'],player['last'],player['bats'],player['rl'],player['position']])
+    players = pd.DataFrame(rows,columns=("id","first_name","last_name","bats","throws","position"))
+    
+    return players
+    
+         
+
+
+
+
 def getBatters(url):
     '''give it the URL of the game directory, 
     i,e. http://www.mlb.com/gdcross/components/game/mlb/year_2015/month_05/day_07/gid_2015_05_07_lanmlb_milmlb_1/
@@ -105,10 +128,14 @@ def gameParse(url):
     gamedata = gamedata.set_index("play_id")
     
     #Get boxscore xml file
-    boxURL = urllib2.urlopen(url + "boxscore.xml").read()
+    try:
+        boxURL = urllib2.urlopen(url + "boxscore.xml").read()
+    except:
+        print "Game Postponed"
+        return None
     boxSoup = BeautifulSoup(boxURL,'lxml')
     if boxSoup.boxscore['status_ind'] != "F":
-        return gamedata
+        return None
         print "Game Postponed!"
     
     game_pk = boxSoup.boxscore['game_pk']
@@ -342,7 +369,7 @@ def parseMonth(month,monthstart,monthend,filename,writecols=True):
     monthstart and month end should be the first day and last day of the month, respectively,filename should be the output file name'''
     print "Month started at ", time.ctime()
     
-    cols = writecols #boolean marker to print the columns on monthstart if writecols = True and not after
+    cols = writecols #boolean marker to print the columns before day 1 and not after
     
     for i in range(monthstart,monthend+1):
         day_num = i
